@@ -9,15 +9,20 @@ use Term::ANSIColor;
 # ------------------------------------------------------
 
 my $DSMC = '/usr/bin/dsmadmc';
-my $euaid = '';
-my $password = '';
-
-my @sp_server = ( "TSM3" );
+my $euaid = 'kdrq';
+my $password = '<YOUR_TSM_PASSWORD_HERE>';
 
 my @sp_server = ( "TSM2",
        		  "TSM3",
 	 	  "TSM4",
-		  "TSM5" );
+		  "TSM5",
+	 	  "TSM2_S3",
+	          "TSM3_S3",
+	 	  "TSM4_S3",
+	 	  "TSM5_S3" );
+
+# my @sp_server = ( "TSM2_S3" );
+
 
 
 
@@ -107,7 +112,7 @@ foreach ( @sp_server ) {
         my @SPOUT_SUMMARY = `$DSMC -se=$_ -id=$euaid -pa=$password -dataonly=y -tab "$q_summary"`;
 	foreach ( @SPOUT_SUMMARY ) {
 		if ( /^YES/i ) { $success_count += 1; }
-		else { $success_count += 1; }
+		elsif ( /^NO/i ) { $fail_count += 1; }
 	}
 	if ( $success_count >= 1 ) { $success_color = "green"; }
 	if ( $fail_count == 0 ) { $fail_color = "green"; }
@@ -139,14 +144,19 @@ foreach ( @sp_server ) {
 
 
 	# Test cross-site connectivity.
+	# Only needed for NON S3 Servers.
 	
-        my $cross_site_conn = $sp_pairs{$_} . ": q status";
-        print colored ( "\n[$_]", "bold blue" );
-        print ( " Checking cross-site connectivity to $sp_pairs{$_}\n" );
-        my @CROSS_SITE = `$DSMC -se=$_ -id=$euaid -pa=$password -dataonly=y -tab "$cross_site_conn"`;
-	if ( $CROSS_SITE[-1] =~ /^ANR1697I/ ) {
-		print colored ( $CROSS_SITE[-1], "green" ); }
-	else { print colored ( @CROSS_SITE, "red" ); }
+	if ( not $_ =~ /S3$/ ) {
+	
+	        my $cross_site_conn = $sp_pairs{$_} . ": q status";
+	        print colored ( "\n[$_]", "bold blue" );
+	        print ( " Checking cross-site connectivity to $sp_pairs{$_}\n" );
+	        my @CROSS_SITE = `$DSMC -se=$_ -id=$euaid -pa=$password -dataonly=y -tab "$cross_site_conn"`;
+		if ( $CROSS_SITE[-1] =~ /^ANR1697I/ ) {
+			print colored ( $CROSS_SITE[-1], "green" ); }
+		else { print colored ( @CROSS_SITE, "red" ); }
+
+	}
 
     }
 

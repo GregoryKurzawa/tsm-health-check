@@ -10,7 +10,7 @@ use Term::ANSIColor;
 
 my $DSMC = '/usr/bin/dsmadmc';
 my $euaid = 'kdrq';
-my $password = '<YOUR_TSM_PASSWORD_HERE>';
+my $password = '';
 
 my @sp_server = ( "TSM2",
        		  "TSM3",
@@ -21,7 +21,8 @@ my @sp_server = ( "TSM2",
 	 	  "TSM4_S3",
 	 	  "TSM5_S3" );
 
-# my @sp_server = ( "TSM2_S3" );
+# FOR TESTING SPECIFIC INSTANCES
+# my @sp_server = ( "TSM3", "TSM3_S3", "TSM2", "TSM2_S3" );
 
 
 
@@ -102,25 +103,30 @@ foreach ( @sp_server ) {
 
 
 	# Check Summary table for BACKUP/ARCHIVE summaries.
+	# Not needed on S3 instances.
 	
-	$success_count = 0;
-	$fail_count = 0;
-	$success_color = "red";
-	$fail_color = "red";
-        print colored ( "\n[$_]", "bold blue" );
-        print ( " Checking BACKUP/ARCHIVE Summaries\n" );
-        my @SPOUT_SUMMARY = `$DSMC -se=$_ -id=$euaid -pa=$password -dataonly=y -tab "$q_summary"`;
-	foreach ( @SPOUT_SUMMARY ) {
-		if ( /^YES/i ) { $success_count += 1; }
-		elsif ( /^NO/i ) { $fail_count += 1; }
+	if ( not $_ =~ /S3$/ ) {
+	
+		$success_count = 0;
+		$fail_count = 0;
+		$success_color = "red";
+		$fail_color = "red";
+	        print colored ( "\n[$_]", "bold blue" );
+	        print ( " Checking BACKUP/ARCHIVE Summaries\n" );
+	        my @SPOUT_SUMMARY = `$DSMC -se=$_ -id=$euaid -pa=$password -dataonly=y -tab "$q_summary"`;
+		foreach ( @SPOUT_SUMMARY ) {
+			if ( /^YES/i ) { $success_count += 1; }
+			elsif ( /^NO/i ) { $fail_count += 1; }
+		}
+		if ( $success_count >= 1 ) { $success_color = "green"; }
+		if ( $fail_count == 0 ) { $fail_color = "green"; }
+		print ( "Successful backup/archive in past hour: " );
+		print colored ( "$success_count\n", $success_color );
+		print ( "Failed backup/archive in past hour: " );
+		print colored ( "$fail_count\n", $fail_color );
+		# print @SPOUT_SUMMARY;
+	
 	}
-	if ( $success_count >= 1 ) { $success_color = "green"; }
-	if ( $fail_count == 0 ) { $fail_color = "green"; }
-	print ( "Successful backup/archive in past hour: " );
-	print colored ( "$success_count\n", $success_color );
-	print ( "Failed backup/archive in past hour: " );
-	print colored ( "$fail_count\n", $fail_color );
-	# print @SPOUT_SUMMARY;
 
 
 	# Check ActivityLog for sessions.
@@ -143,8 +149,8 @@ foreach ( @sp_server ) {
 	else { print colored ( $S3_CONN[0], "red" ); }
 
 
-	# Test cross-site connectivity.
-	# Only needed for NON S3 Servers.
+	# Test cross-site (TSM2 <-> TSM5; TSM3 <-> TSM4) connectivity.
+	# Not needed on S3 instances.
 	
 	if ( not $_ =~ /S3$/ ) {
 	
